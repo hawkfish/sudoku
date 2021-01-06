@@ -116,21 +116,23 @@ def parseCells(lines):
     cells = []
     for l in lines:
         for c in l:
-            cells.append( _boardIn[c] )
+            if c in _boardIn:
+                cells.append( _boardIn[c] )
     return cells
 
 _boardOut = '123456789'
 
 def formatCells(cells):
     lines = []
-    for r in range(0,len(iRows)):
+    for r in range(len(iRows)):
         line = ''
         for c in iRows[r]:
             if len(cells[c]) == 1:
                 line += _boardOut[cells[c][0]]
             else:
                 line += ' '
-        lines.append(line)
+        lines.append(line[:3] + '|' + line[3:6] + '|' + line[6:])
+        if r in (2, 5,): lines += ['---+---+---']
     return lines
 
 def printBoard(board):
@@ -333,14 +335,17 @@ if __name__ == '__main__':
     solver = Solver()
 
     board = Board(parseCells(problem))
-    print("Branch:")
+    print("Problem:")
+    print("-" * 11)
     printBoard(board)
     print()
 
     solution = solver.solve(board)
     if solution:
         print("Solution:")
+        print("-" * 11)
         printBoard(solution)
+        print()
 
     else:
         print("No Solution")
