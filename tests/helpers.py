@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
+import os
+
 def readFixture(sdk):
-    f = open(sdk, 'r')
+    f = open(os.path.join('tests', 'fixtures', sdk), 'r')
     lines = f.readlines()
     f.close()
     return [ line.strip('\n') for line in lines]

@@ -8,7 +8,7 @@ class TestSolver(unittest.TestCase):
 
     def test_search(self):
         setup = Solver()
-        board = Board(parseCells(readFixture('data/2007-02-18.sdk')))
+        board = Board(parseCells(readFixture('2007-02-18.sdk')))
         board.reduce()
 
         solution = setup.search(board)

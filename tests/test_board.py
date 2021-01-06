@@ -11,13 +11,13 @@ class TestBoard(unittest.TestCase):
         self.assertEqual(expected, actual)
 
     def test_reduceCell(self):
-        setup = Board(parseCells(readFixture('data/2007-02-18.sdk')))
+        setup = Board(parseCells(readFixture('2007-02-18.sdk')))
 
         self.assertEqual(5, setup.reduceCell(0))
         self.assertCell([1, 3, 8, 9, ], setup.cells[0] )
 
     def test_reduceRegion(self):
-        setup = Board(parseCells(readFixture('data/2007-02-18.sdk')))
+        setup = Board(parseCells(readFixture('2007-02-18.sdk')))
 
         #   After reducing all the cells, there are three
         #   regions that can be reduced
@@ -28,7 +28,7 @@ class TestBoard(unittest.TestCase):
         self.assertCell([3,], setup.cells[8] )
 
     def test_reduce(self):
-        setup = Board(parseCells(readFixture('data/2007-02-18.sdk')))
+        setup = Board(parseCells(readFixture('2007-02-18.sdk')))
         setup.reduce()
 
         #   This board has a branch point in cell 5
@@ -36,7 +36,7 @@ class TestBoard(unittest.TestCase):
         self.assertEqual([0, 1, ], setup.cells[setup.shortest])
 
     def test_enumerateBranches(self):
-        setup = Board(parseCells(readFixture('data/2007-02-18.sdk')))
+        setup = Board(parseCells(readFixture('2007-02-18.sdk')))
         setup.reduce()
 
         #   We need to traverse three branches to solve this
