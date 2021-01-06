@@ -1,4 +1,5 @@
-# !/usr/bin/python
+# !/usr/bin/python3
+
 import copy
 import operator
 import sys
@@ -134,9 +135,9 @@ def formatCells(cells):
 
 def printBoard(board):
     lines = formatCells(board.cells)
-    print '\n'.join(lines)
+    print('\n'.join(lines))
 
-class ReduceError:
+class ReduceError(BaseException):
     pass
 
 #   Find all the values used by a region
@@ -238,7 +239,6 @@ class Board:
         new_lens = [ len(cell) for cell in self.cells ]
         delta = sum(map(operator.sub, old_lens, new_lens))
         self.total -= delta
-        if delta < 0: print c, delta, self.total
         return delta
 
     #   Look for values that can only go one place in the region
@@ -291,16 +291,14 @@ class Board:
                 branch = Board(cells)
                 branch.reduce()
                 branches.append(branch)
-            except ReduceError, e:
+            except ReduceError:
                 pass
 
         return branches
 
 #   Prefer boards with shorter shortest branches
-def compareBoards(lhs,rhs):
-    diff = rhs.total - lhs.total
-    if diff: return diff
-    return len(rhs.cells[rhs.shortest]) - len(lhs.cells[lhs.shortest])
+def branchKey(branch):
+    return len(branch.cells[branch.shortest])
 
 class Solver:
 
@@ -311,43 +309,40 @@ class Solver:
     def search(self, board):
         self._searched += 1
 
-        #   FIXME: exception flow control
         if len(board.cells) == board.total:
-            raise board
+            return board
 
         branches = board.enumerateBranches()
-        branches.sort(compareBoards)
+        branches.sort(key=branchKey)
 
         #   Recurse on the branches until we have a solution
         for branch in branches:
-            self.search(branch)
+            solution = self.search(branch)
+            if solution: return solution
             self._backtracks += 1
+        return None
 
     def solve(self, board):
-        try:
-            board.reduce()
-            self.search(board)
-            raise "No Solution"
-
-        except Board, solution:
-            return solution
+        board.reduce()
+        return self.search(board)
 
 if __name__ == '__main__':
     problem = sys.stdin.readlines()
     problem = [ p[:-1] for p in problem]
 
     solver = Solver()
-    try:
-        board = Board(parseCells(problem))
-        print "Branch:"
-        printBoard(board)
-        print
 
-        solution = solver.solve(board)
-        print "Solution:"
+    board = Board(parseCells(problem))
+    print("Branch:")
+    printBoard(board)
+    print()
+
+    solution = solver.solve(board)
+    if solution:
+        print("Solution:")
         printBoard(solution)
 
-    except:
-        print "No Solution"
+    else:
+        print("No Solution")
 
-    print "%d positions examined, %d backtracks" % (solver._searched, solver._backtracks,)
+    print("%d positions examined, %d backtracks" % (solver._searched, solver._backtracks,))

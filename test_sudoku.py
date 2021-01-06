@@ -1,10 +1,16 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 
 import unittest
 from sudoku import *
 
 def readFixture(sdk):
-    return [ line.strip('\n') for line in file(sdk, 'rb').readlines()]
+    f = open(sdk, 'r')
+    lines = f.readlines()
+    f.close()
+    return [ line.strip('\n') for line in lines]
+
+def valuesFromDisplay(display):
+    return [value-1 for value in display]
 
 class TestCells(unittest.TestCase):
 
@@ -175,35 +181,35 @@ class TestReduce(unittest.TestCase):
     def test_reduceRow(self):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
-        expected = map( lambda x: x-1, [1, 2, 3, 7, 8, 9, ] )
+        expected = valuesFromDisplay( [1, 2, 3, 7, 8, 9, ] )
         actual = reduceRow(setup, 7)[7]
         self.assertEqual(expected, actual)
 
     def test_reduceCol(self):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
-        expected = map( lambda x: x-1, [1, 2, 4, 8, 9, ] )
+        expected = valuesFromDisplay( [1, 2, 4, 8, 9, ] )
         actual = reduceCol(setup, 12)[12]
         self.assertEqual(expected, actual)
 
     def test_reduceBox(self):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
-        expected = map( lambda x: x-1, [1, 3, 5, 7, ] )
+        expected = valuesFromDisplay( [1, 3, 5, 7, ] )
         actual = reduceBox(setup, 7)[7]
         self.assertEqual(expected, actual)
 
     def test_reduceKing(self):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
-        expected = map( lambda x: x-1, [1, 2, 3, 5, 8, ] )
+        expected = valuesFromDisplay( [1, 2, 3, 5, 8, ] )
         actual = reduceKing(setup, 55)[55]
         self.assertEqual(expected, actual)
 
     def test_reduceKnight(self):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
-        expected = map( lambda x: x-1, [2, 4, 5, 6, 7, ] )
+        expected = valuesFromDisplay( [2, 4, 5, 6, 7, ] )
         actual = reduceKnight(setup, 34)[34]
         self.assertEqual(expected, actual)
 
@@ -211,7 +217,7 @@ class TestReduce(unittest.TestCase):
         setup = parseCells(readFixture('data/2007-02-18.sdk'))
 
         c = 40
-        expected = map( lambda x: x-1, [1, 2, 3, 4, 6, 8, 9, ] )
+        expected = valuesFromDisplay( [1, 2, 3, 4, 6, 8, 9, ] )
         actual = reduceAdjacent(setup, c)
         self.assertEqual(expected, actual[leftOf(c)])
         self.assertEqual(expected, actual[rightOf(c)])
@@ -221,7 +227,7 @@ class TestReduce(unittest.TestCase):
 class TestBoard(unittest.TestCase):
 
     def assertCell(self, values, actual):
-        expected = map( lambda x: x-1, values )
+        expected = valuesFromDisplay( values )
         self.assertEqual(expected, actual)
 
     def test_reduceCell(self):
@@ -275,13 +281,10 @@ class TestSolver(unittest.TestCase):
         board = Board(parseCells(readFixture('data/2007-02-18.sdk')))
         board.reduce()
 
-        try:
-            setup.search(board)
-            self.fail("Didn't find solution")
-
-        except Board, solution:
-            self.assertEqual(3, setup._searched)
-            self.assertEqual(0, setup._backtracks)
+        solution = setup.search(board)
+        self.assertIsNotNone(solution, "Didn't find solution")
+        self.assertEqual(3, setup._searched)
+        self.assertEqual(0, setup._backtracks)
 
 if __name__ == '__main__':
     unittest.main()
