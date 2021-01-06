@@ -229,7 +229,6 @@ class Board:
         self.shortest = None
         for c in range(0,len(self.cells)):
             self.total += len(cells[c])
-        print "Total: %d" % self.total
 
     #   Remove all illegal values from a cell
     def reduceCell(self, c):
@@ -237,7 +236,7 @@ class Board:
         for rule in rules:
             self.cells = rule(self.cells, c)
         new_lens = [ len(cell) for cell in self.cells ]
-        delta = sum(map(operator.sub, new_lens, old_lens))
+        delta = sum(map(operator.sub, old_lens, new_lens))
         self.total -= delta
         if delta < 0: print c, delta, self.total
         return delta
@@ -303,39 +302,52 @@ def compareBoards(lhs,rhs):
     if diff: return diff
     return len(rhs.cells[rhs.shortest]) - len(lhs.cells[lhs.shortest])
 
-_searched = 0
-_backtracks = 0
+class Solver:
 
-def search(board):
-    global _searched
-    _searched += 1
-    if len(board.cells) == board.total:
-        raise board
+    def __init__(self):
+        self._searched = 0
+        self._backtracks = 0
 
-    print "Branch:"
-    printBoard(board)
+    def search(self, board):
+        self._searched += 1
 
-    branches = board.enumerateBranches()
-    branches.sort(compareBoards)
+        #   FIXME: exception flow control
+        if len(board.cells) == board.total:
+            raise board
 
-    for board in branches:
-        search(board)
-        global _backtracks
-        _backtracks += 1
+        branches = board.enumerateBranches()
+        branches.sort(compareBoards)
 
-def solve(board):
-    try:
-        board.reduce()
-        search(board)
-        print "No Solution"
-    except Board, solution:
-        print "Solution:"
-        printBoard(solution)
-    print "%d positions examined, %d backtracks" % (_searched, _backtracks,)
+        #   Recurse on the branches until we have a solution
+        for branch in branches:
+            self.search(branch)
+            self._backtracks += 1
+
+    def solve(self, board):
+        try:
+            board.reduce()
+            self.search(board)
+            raise "No Solution"
+
+        except Board, solution:
+            return solution
 
 if __name__ == '__main__':
     problem = sys.stdin.readlines()
     problem = [ p[:-1] for p in problem]
 
-    board = Board(parseCells(problem))
-    solve(board)
+    solver = Solver()
+    try:
+        board = Board(parseCells(problem))
+        print "Branch:"
+        printBoard(board)
+        print
+
+        solution = solver.solve(board)
+        print "Solution:"
+        printBoard(solution)
+
+    except:
+        print "No Solution"
+
+    print "%d positions examined, %d backtracks" % (solver._searched, solver._backtracks,)
