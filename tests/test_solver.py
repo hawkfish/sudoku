@@ -16,5 +16,36 @@ class TestSolver(unittest.TestCase):
         self.assertEqual(3, setup._searched)
         self.assertEqual(0, setup._backtracks)
 
+    def test_miracle(self):
+        rules = [
+            reduceRow,
+            reduceCol,
+            reduceBox,
+            reduceKing,
+            reduceKnight,
+            reduceAdjacent,
+        ]
+
+        setup = Solver()
+        board = Board(parseCells(readFixture('miracle.sdk')), rules)
+        board.reduce()
+
+        solution = setup.search(board)
+        actual = formatCells(solution._cells)
+        expected = [
+            '483|726|159',
+            '726|159|483',
+            '159|483|726',
+            '---+---+---',
+            '837|261|594',
+            '261|594|837',
+            '594|837|261',
+            '---+---+---',
+            '372|615|948',
+            '615|948|372',
+            '948|372|615',
+        ]
+        self.assertEqual(expected, actual)
+
 if __name__ == '__main__':
     unittest.main()

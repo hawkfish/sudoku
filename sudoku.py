@@ -1,5 +1,6 @@
 # !/usr/bin/python3
 
+import argparse
 import copy
 import operator
 import sys
@@ -136,7 +137,7 @@ def formatCells(cells):
     return lines
 
 def printBoard(board):
-    lines = formatCells(board.cells)
+    lines = formatCells(board._cells)
     print('\n'.join(lines))
 
 class ReduceError(BaseException):
@@ -183,16 +184,19 @@ def reduceBox(cells, c):
     return cells
 
 #   Apply the king's move reduction rule
+#   Any two cells separated by a king's move cannot contain the same digit
 def reduceKing(cells, c):
     cells[c] = reduceCellByRegion(cells, c, iKings[c])
     return cells
 
 #   Apply the knight's move reduction rule
+#   Any two  cells separated by a knight's move cannot contain the same digit
 def reduceKnight(cells, c):
     cells[c] = reduceCellByRegion(cells, c, iKnights[c])
     return cells
 
-#   Apply the adjacency move reduction rule
+#   Apply the adjacency move reduction rule:
+#   Any two orthogonally adjacent cells cannot contain consecutive digits
 def reduceAdjacent(cells, c):
     cell = cells[c]
     if len(cell) == 1:
@@ -219,35 +223,37 @@ def reduceAdjacent(cells, c):
 
     return cells
 
-rules = [
+_rules = [
     reduceRow,
     reduceCol,
     reduceBox,
 ]
 
 class Board:
-    def __init__(self, cells):
-        self.cells = cells
-        self.total = 0
-        self.shortest = None
-        for c in range(0,len(self.cells)):
-            self.total += len(cells[c])
+    def __init__(self, cells, rules = _rules):
+        self._cells = cells
+        self._rules = rules
+        self._total = 0
+        for c in range(0,len(self._cells)):
+            self._total += len(cells[c])
+        self._shortest = None
 
     #   Remove all illegal values from a cell
-    def reduceCell(self, c):
-        old_lens = [ len(cell) for cell in self.cells ]
-        for rule in rules:
-            self.cells = rule(self.cells, c)
-        new_lens = [ len(cell) for cell in self.cells ]
+    def reduceCell(self, c, callback=None):
+        old_lens = [ len(cell) for cell in self._cells ]
+        for rule in self._rules:
+            self._cells = rule(self._cells, c)
+        new_lens = [ len(cell) for cell in self._cells ]
         delta = sum(map(operator.sub, old_lens, new_lens))
-        self.total -= delta
+        self._total -= delta
+        if callback: callback(self, c, delta)
         return delta
 
     #   Look for values that can only go one place in the region
-    def reduceRegion(self, region):
+    def reduceRegion(self, region, callback = None):
         valueCells = [[] for i in range(0,9)]
         for c in region:
-            for v in self.cells[c]:
+            for v in self._cells[c]:
                 valueCells[v].append(c)
 
         delta = 0
@@ -255,43 +261,45 @@ class Board:
             if 0 == len(valueCells[v]): raise ReduceError
             if 1 == len(valueCells[v]):
                 c = valueCells[v][0]
-                delta += len(self.cells[c]) - 1
-                self.cells[c] = [v,]
+                cellDelta = len(self._cells[c]) - 1
+                delta += cellDelta
+                self._cells[c] = [v,]
+                if callback: callback(self, c, cellDelta)
 
-        self.total -= delta
+        self._total -= delta
         return delta
 
-    def reduce(self):
+    def reduce(self, callback = None):
         #   Reduce all the cells as far as possible
         #   until we can't make any more progress
         todo = 1
         while todo:
             todo = 0
-            for c in range(0,len(self.cells)): todo += self.reduceCell(c)
-            for r in iRows: todo += self.reduceRegion(r)
-            for r in iCols: todo += self.reduceRegion(r)
-            for r in iBoxes: todo += self.reduceRegion(r)
+            for c in range(0,len(self._cells)): todo += self.reduceCell(c, callback)
+            for r in iRows: todo += self.reduceRegion(r, callback)
+            for r in iCols: todo += self.reduceRegion(r, callback)
+            for r in iBoxes: todo += self.reduceRegion(r, callback)
 
         #   Once we fail to reduce cells,
         #   find the cell with the shortest list
         #   of possibilities
-        self.shortest = 0
+        self._shortest = 0
         min_len = 10
-        for c in range(0,len(self.cells)):
-            b_len = len(self.cells[c])
+        for c in range(0,len(self._cells)):
+            b_len = len(self._cells[c])
             if b_len == 1: continue
             if b_len >= min_len: continue
             min_len = b_len
-            self.shortest = c
+            self._shortest = c
 
-    def enumerateBranches(self):
+    def enumerateBranches(self, callback = None):
         branches = []
-        for value in self.cells[self.shortest]:
-            cells = copy.deepcopy(self.cells)
-            cells[self.shortest] = [value,]
+        for value in self._cells[self._shortest]:
+            cells = copy.deepcopy(self._cells)
+            cells[self._shortest] = [value,]
             try:
-                branch = Board(cells)
-                branch.reduce()
+                branch = Board(cells, self._rules)
+                branch.reduce(callback)
                 branches.append(branch)
             except ReduceError:
                 pass
@@ -300,7 +308,7 @@ class Board:
 
 #   Prefer boards with shorter shortest branches
 def branchKey(branch):
-    return len(branch.cells[branch.shortest])
+    return len(branch._cells[branch._shortest])
 
 class Solver:
 
@@ -308,46 +316,92 @@ class Solver:
         self._searched = 0
         self._backtracks = 0
 
-    def search(self, board):
+    def search(self, board, callback = None):
         self._searched += 1
 
-        if len(board.cells) == board.total:
+        if len(board._cells) == board._total:
             return board
 
-        branches = board.enumerateBranches()
+        branches = board.enumerateBranches(callback)
         branches.sort(key=branchKey)
 
         #   Recurse on the branches until we have a solution
         for branch in branches:
-            solution = self.search(branch)
+            if callback: callback(branch, -1, 0)
+            solution = self.search(branch, callback)
             if solution: return solution
             self._backtracks += 1
         return None
 
-    def solve(self, board):
-        board.reduce()
-        return self.search(board)
+    def solve(self, board, callback = None):
+        board.reduce(callback)
+        return self.search(board, callback)
+
+def onMoved():
+    finished = False
+
+    def showBoard(board, label):
+        print(label)
+        print("-" * 11)
+        printBoard(board)
+        sys.stdout.write( '> ' )
+        sys.stdout.flush()
+
+        nonlocal finished
+        cmd = sys.stdin.readline().strip()
+        if cmd == 'q': sys.exit(0)
+        if cmd == 'f': finished = True
+
+    def showMoves(board, c, delta):
+        if finished: return
+
+        if c < 0:
+            showBoard(board, "Branch:")
+            return
+
+        if not delta: return
+        if len(board._cells[c]) != 1: return
+
+        showBoard(board, f"Cell {row(c)+1}, {col(c)+1}:")
+
+    return showMoves
 
 if __name__ == '__main__':
-    problem = sys.stdin.readlines()
-    problem = [ p[:-1] for p in problem]
+    parser = argparse.ArgumentParser(description='Solve a Sudoku problem read from stdin')
+    parser.add_argument( 'files', metavar='file', type=str, nargs='*', help="Problem files to read and solve.")
+    parser.add_argument('-k', '--king', action='store_true', help="Use King's move restrictions")
+    parser.add_argument('-n', '--knight', action='store_true', help="Use Knight's move restrictions")
+    parser.add_argument('-a', '--adjacent', action='store_true', help="Use adjacency restrictions")
+    parser.add_argument('-i', '--interactive', action='store_const', const=onMoved(), help="Interactive mode")
 
-    solver = Solver()
+    args = parser.parse_args()
+    rules = copy.copy(_rules)
+    if args.king: rules.append(reduceKing)
+    if args.knight: rules.append(reduceKnight)
+    if args.adjacent: rules.append(reduceAdjacent)
 
-    board = Board(parseCells(problem))
-    print("Problem:")
-    print("-" * 11)
-    printBoard(board)
-    print()
+    for filename in args.files:
+        f = open(filename, 'r')
+        problem = f.readlines()
+        problem = [ p[:-1] for p in problem]
+        f.close()
 
-    solution = solver.solve(board)
-    if solution:
-        print("Solution:")
+        solver = Solver()
+
+        board = Board(parseCells(problem), rules)
+        print("Problem:")
         print("-" * 11)
-        printBoard(solution)
+        printBoard(board)
         print()
 
-    else:
-        print("No Solution")
+        solution = solver.solve(board, args.interactive)
+        if solution:
+            print("Solution:")
+            print("-" * 11)
+            printBoard(solution)
+            print()
 
-    print("%d positions examined, %d backtracks" % (solver._searched, solver._backtracks,))
+        else:
+            print("No Solution")
+
+        print("%d positions examined, %d backtracks" % (solver._searched, solver._backtracks,))
