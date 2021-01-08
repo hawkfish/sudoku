@@ -2,7 +2,8 @@
 
 import argparse
 import sys
-from solver import *
+
+from sudoku import *
 
 def onMoved():
     finished = False
