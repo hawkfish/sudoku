@@ -1,7 +1,5 @@
 # !/usr/bin/python3
 
-import operator
-
 from sudoku.cells import *
 
 iRows = []

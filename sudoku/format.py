@@ -1,6 +1,5 @@
 # !/usr/bin/python3
 
-from sudoku.cells import *
 from sudoku.regions import *
 
 _boardIn = {
