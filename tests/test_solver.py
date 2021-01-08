@@ -6,8 +6,30 @@ from helpers import *
 
 class TestSolver(unittest.TestCase):
 
+    def test_enumerateBranches(self):
+        setup = Solver()
+
+        board = Board(parseCells(readFixture('2007-02-18.sdk')))
+        board.reduce()
+
+        #   We need to traverse three branches to solve this
+        actual = setup.enumerateBranches(board)
+        self.assertEqual(1, len(actual))
+        self.assertEqual(153, board._total)
+
+        board = actual[0]
+        actual = setup.enumerateBranches(board)
+        self.assertEqual(1, len(actual))
+        self.assertEqual(142, board._total)
+
+        board = actual[0]
+        actual = setup.enumerateBranches(board)
+        self.assertEqual(1, len(actual))
+        self.assertEqual(len(board._cells), board._total)
+
     def test_search(self):
         setup = Solver()
+
         board = Board(parseCells(readFixture('2007-02-18.sdk')))
         board.reduce()
 

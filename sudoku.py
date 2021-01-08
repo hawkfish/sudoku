@@ -292,20 +292,6 @@ class Board:
             min_len = b_len
             self._shortest = c
 
-    def enumerateBranches(self, callback = None):
-        branches = []
-        for value in self._cells[self._shortest]:
-            cells = copy.deepcopy(self._cells)
-            cells[self._shortest] = [value,]
-            try:
-                branch = Board(cells, self._rules)
-                branch.reduce(callback)
-                branches.append(branch)
-            except ReduceError:
-                pass
-
-        return branches
-
 #   Prefer boards with shorter shortest branches
 def branchKey(branch):
     return len(branch._cells[branch._shortest])
@@ -316,13 +302,27 @@ class Solver:
         self._searched = 0
         self._backtracks = 0
 
+    def enumerateBranches(self, board, callback = None):
+        branches = []
+        for value in board._cells[board._shortest]:
+            cells = copy.deepcopy(board._cells)
+            cells[board._shortest] = [value,]
+            try:
+                branch = Board(cells, board._rules)
+                branch.reduce(callback)
+                branches.append(branch)
+            except ReduceError:
+                pass
+
+        return branches
+
     def search(self, board, callback = None):
         self._searched += 1
 
         if len(board._cells) == board._total:
             return board
 
-        branches = board.enumerateBranches(callback)
+        branches = self.enumerateBranches(board, callback)
         branches.sort(key=branchKey)
 
         #   Recurse on the branches until we have a solution
@@ -331,6 +331,7 @@ class Solver:
             solution = self.search(branch, callback)
             if solution: return solution
             self._backtracks += 1
+
         return None
 
     def solve(self, board, callback = None):

@@ -35,24 +35,5 @@ class TestBoard(unittest.TestCase):
         self.assertEqual(5, setup._shortest)
         self.assertEqual([0, 1, ], setup._cells[setup._shortest])
 
-    def test_enumerateBranches(self):
-        setup = Board(parseCells(readFixture('2007-02-18.sdk')))
-        setup.reduce()
-
-        #   We need to traverse three branches to solve this
-        actual = setup.enumerateBranches()
-        self.assertEqual(1, len(actual))
-        self.assertEqual(153, setup._total)
-
-        setup = actual[0]
-        actual = setup.enumerateBranches()
-        self.assertEqual(1, len(actual))
-        self.assertEqual(142, setup._total)
-
-        setup = actual[0]
-        actual = setup.enumerateBranches()
-        self.assertEqual(1, len(actual))
-        self.assertEqual(len(setup._cells), setup._total)
-
 if __name__ == '__main__':
     unittest.main()
