@@ -4,17 +4,10 @@ import copy
 import operator
 
 from sudoku.cells import *
+from sudoku.regions import *
 
 class ReduceError(BaseException):
     pass
-
-#   Find all the values used by a region
-def findRegionValues(cells, region):
-    values = [0 for v in range(0,9)]
-    for c in region:
-        if len(cells[c]) == 1:
-            values[cells[c][0]] = 1
-    return values
 
 #   Remove all used values from a cell
 def reduceCellByValues(cell, used):
