@@ -373,7 +373,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--king', action='store_true', help="Use King's move restrictions")
     parser.add_argument('-n', '--knight', action='store_true', help="Use Knight's move restrictions")
     parser.add_argument('-a', '--adjacent', action='store_true', help="Use adjacency restrictions")
-    parser.add_argument('-i', '--interactive', action='store_const', const=onMoved(), help="Interactive mode")
+    parser.add_argument('-i', '--interactive', action='store_true', help="Interactive mode")
 
     args = parser.parse_args()
     rules = copy.copy(_rules)
@@ -395,7 +395,10 @@ if __name__ == '__main__':
         printBoard(board)
         print()
 
-        solution = solver.solve(board, args.interactive)
+        callback = None
+        if args.interactive: callback = onMoved()
+
+        solution = solver.solve(board, callback)
         if solution:
             print("Solution:")
             print("-" * 11)
